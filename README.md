@@ -49,3 +49,132 @@ configure AWS ALI:
 sudo apt-get install awscli -y
 aws configure
 ```
+
+# Step 3: Create a Dockerfile
+
+```
+FROM python:3
+COPY . /MLmodel
+WORKDIR /MLmodel
+RUN pip install -r requirements.txt
+CMD ["python", "decisiontreeclassifier.py"]
+```
+
+# Step 4: Create k8s-deployment.yaml
+
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: decisiontreeclassifier-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: decisiontreeclassifier-app
+  template:
+    metadata:
+      labels:
+        app: decisiontreeclassifier-app
+    spec:
+      containers:
+        - name: decisiontreeclassifier-container
+          image: <docker-image>:latest
+          ports:
+            - containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: decisiontreeclassifier-service
+spec:
+  selector:
+    app: decisiontreeclassifier-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5000
+  type: LoadBalancer
+```
+
+here, using LoadBalancer can help to handle higher loads and provides fault tolerance.
+
+# Step 5: Set Up GitHub Actions for CI/CD
+
+.github/workflows/ci-cd-pipeline.yml
+
+```
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build Docker image
+        run: docker build -t your-docker-image:${{ github.sha }} .
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Push Docker image
+        run: docker push your-docker-image:${{ github.sha }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+
+      - name: Update Kubernetes deployment
+        run: |
+          aws eks update-kubeconfig --name your-eks-cluster
+          kubectl set image deployment/decisiontreeclassifier-deployment decisiontreeclassifier-container=your-docker-image:${{ github.sha }}
+
+```
+
+Then Add the secrets to github:
+Add the following secrets under "Settings" > "Secrets" > "Actions":
+
+```
+DOCKER_USERNAME:  Docker Hub username.
+DOCKER_PASSWORD:  Docker Hub password.
+AWS_ACCESS_KEY_ID: Yur AWS access key ID.
+AWS_SECRET_ACCESS_KEY:  AWS secret access key.
+```
+
+# Step 6: Deploy to Kubernetes
+
+In EC2 instance's CLI:
+
+```
+aws eks update-kubeconfig --name your-eks-cluster
+
+```
+
+Deploy initial Kubernetes resources using the k8s-deployment.yaml file
+
+```
+kubectl apply -f k8s-deployment.yaml
+
+```

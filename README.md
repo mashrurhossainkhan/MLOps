@@ -7,16 +7,11 @@ Deploy an ML model using AWS services like EC2 and S3, and how to set up a CI/CD
 # Prerequisites
 
 1. EC2 Instance: An EC2 instance with Docker and Kubernetes installed.
-2. S3 Bucket: Used for storing video data.
-3. GitHub Repository: ML model code is hosted.
-4. Docker: Installed on EC2 instance.
-5. Kubernetes Cluster: Set up Kubernetes (EKS on AWS is a good choice).
+2. GitHub Repository: ML model code is hosted.
+3. Docker: Installed on EC2 instance.
+4. Kubernetes Cluster: Set up Kubernetes (EKS on AWS is a good choice).
 
-# Step 1: Set Up an S3 Bucket
-
-Create an S3 Bucket to store the Video data
-
-# Step 2: Set Up an EC2 Instance
+# Step 1: Set Up an EC2 Instance
 
 o Create an EC2 instance with a suitable instance type (e.g., For training deep learning models, P3 and P4 instances are ideal due to their powerful GPUs and large memory. For deploying models and running inferences, G4 and G5 instances are more cost-effective and sufficient.).
 o SSH into your EC2 instance.
@@ -50,7 +45,7 @@ sudo apt-get install awscli -y
 aws configure
 ```
 
-# Step 3: Create a Dockerfile
+# Step 2: Create a Dockerfile
 
 ```
 FROM python:3
@@ -60,7 +55,7 @@ RUN pip install -r requirements.txt
 CMD ["python", "decisiontreeclassifier.py"]
 ```
 
-# Step 4: Create k8s-deployment.yaml
+# Step 3: Create k8s-deployment.yaml
 
 ```
 apiVersion: apps/v1
@@ -99,7 +94,7 @@ spec:
 
 here, using LoadBalancer can help to handle higher loads and provides fault tolerance.
 
-# Step 5: Set Up GitHub Actions for CI/CD
+# Step 4: Set Up GitHub Actions for CI/CD
 
 .github/workflows/ci-cd-pipeline.yml
 
@@ -163,7 +158,7 @@ AWS_ACCESS_KEY_ID: Yur AWS access key ID.
 AWS_SECRET_ACCESS_KEY:  AWS secret access key.
 ```
 
-# Step 6: Deploy to Kubernetes
+# Step 5: Deploy to Kubernetes
 
 In EC2 instance's CLI:
 
